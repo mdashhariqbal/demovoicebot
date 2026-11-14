@@ -1,5 +1,7 @@
 # Ashhar voice bot
 
+[🔗 Try the Live Demo](https://demovoicebot.vercel.app)
+
 Tap a button, ask a question out loud, hear the answer. Visitors need no account, no install and no API key.
 
 ## Deploy in about 5 minutes (free)
@@ -10,7 +12,7 @@ Tap a button, ask a question out loud, hear the answer. Visitors need no account
    - Name: `GROQ_API_KEY`
    - Value: the key from step 1
    Click Deploy.
-4. **Test it.** Open the Vercel URL in Chrome on desktop and on your phone, and tap each example question. That URL is what you submit.
+4. **Test it.** Open your live deployment URL ([https://demovoicebot.vercel.app](https://demovoicebot.vercel.app)) in Chrome on desktop and on your phone, and tap each example question. That URL is what you submit.
 
 No GitHub? Run `npx vercel --prod` inside this folder, then `npx vercel env add GROQ_API_KEY production` and redeploy.
 
