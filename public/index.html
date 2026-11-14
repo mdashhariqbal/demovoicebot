@@ -116,6 +116,10 @@ h2 { font-size: 1rem; font-weight: 600; color: var(--muted); margin: 34px 0 10px
 .msg.error .who { color: var(--error); }
 .msg p { margin: 0; font-size: 1.05rem; max-width: 60ch; }
 
+.voicebar { margin: 30px 0 0; font-size: .9rem; color: var(--muted); }
+.voicebar[hidden] { display: none; }
+.voicebar select { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; max-width: 100%; }
+.voicebar select:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
 .foot { margin-top: 44px; font-size: .85rem; color: var(--muted); max-width: 56ch; }
 </style>
 </head>
@@ -148,6 +152,8 @@ h2 { font-size: 1rem; font-weight: 600; color: var(--muted); margin: 34px 0 10px
   </form>
 
   <ul class="log" id="log" aria-live="polite"></ul>
+
+  <p class="voicebar" id="voiceBar" hidden><label for="voicePick">Voice</label> <select id="voicePick"></select></p>
 
   <p class="foot">Your browser turns your speech into text, and the text goes to an AI model that writes the answer in my voice. This site does not store your questions.</p>
 </main>
@@ -216,14 +222,51 @@ h2 { font-size: 1rem; font-weight: 600; color: var(--muted); margin: 34px 0 10px
     log.insertBefore(li, log.firstChild);
   }
 
+  var MALE = /Google UK English Male|Microsoft (Guy|Davis|Ryan|Christopher|Eric|Roger|Steffan|Brian|Andrew|Prabhat)|Daniel|Alex|Aaron|Fred|Arthur|Tom|Rishi|Ravi|Male/i;
+  var voices = [];
+  var userVoice = false;
+  var picker = document.getElementById('voicePick');
+  var pickerBar = document.getElementById('voiceBar');
+
+  function fillPicker() {
+    if (!picker || voices.length < 2) { if (pickerBar) pickerBar.hidden = true; return; }
+    picker.innerHTML = '';
+    voices.forEach(function (v, i) {
+      var o = document.createElement('option');
+      o.value = i;
+      o.textContent = v.name + ' (' + v.lang + ')';
+      if (v === voice) o.selected = true;
+      picker.appendChild(o);
+    });
+    pickerBar.hidden = false;
+  }
+
   function pickVoice() {
     if (!synth) return;
-    var all = synth.getVoices().filter(function (v) { return /^en/i.test(v.lang); });
-    if (!all.length) return;
-    var preferred = /Google US English|Samantha|Microsoft (Aria|Jenny|Guy|Davis)|Natural|Daniel|Karen/i;
-    voice = all.filter(function (v) { return preferred.test(v.name); })[0] ||
-            all.filter(function (v) { return /en[-_]US/i.test(v.lang); })[0] ||
-            all[0];
+    voices = synth.getVoices().filter(function (v) { return /^en/i.test(v.lang); });
+    if (!voices.length) return;
+    if (!userVoice) {
+      var males = voices.filter(function (v) { return MALE.test(v.name); });
+      voice = males.filter(function (v) { return /en[-_]IN/i.test(v.lang); })[0] ||
+              males.filter(function (v) { return /en[-_]US/i.test(v.lang); })[0] ||
+              males[0] ||
+              voices.filter(function (v) { return /en[-_]US/i.test(v.lang); })[0] ||
+              voices[0];
+    }
+    fillPicker();
+  }
+
+  if (picker) {
+    picker.addEventListener('change', function () {
+      voice = voices[picker.value] || voice;
+      userVoice = true;
+      if (synth) {
+        synth.cancel();
+        var u = new SpeechSynthesisUtterance('Hi, this is my voice.');
+        u.voice = voice;
+        synth.speak(u);
+      }
+    });
   }
   if (synth) {
     pickVoice();
@@ -250,6 +293,7 @@ h2 { font-size: 1rem; font-weight: 600; color: var(--muted); margin: 34px 0 10px
       if (voice) u.voice = voice;
       u.lang = (voice && voice.lang) || 'en-US';
       u.rate = 1.02;
+      if (!(voice && MALE.test(voice.name))) u.pitch = 0.8;
       if (i === parts.length - 1) {
         u.onend = function () { if (id === runId && state === 'speaking') setState('idle'); };
       }
