@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Talk to Ashhar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0E1B2A;
+  --fog: #E9EEF2;
+  --paper: #FFFFFF;
+  --listen: #F2B705;
+  --speak: #0F8B8D;
+  --muted: #526273;
+  --line: #C5D0DA;
+  --error: #B3261E;
+  font-family: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--fog);
+  color: var(--ink);
+  line-height: 1.5;
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+}
+main { max-width: 620px; margin: 0 auto; padding: 36px 20px 48px; }
+h1 {
+  font-size: clamp(2.4rem, 9vw, 3.6rem);
+  line-height: 1.02;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0 0 14px;
+}
+.lede { margin: 0; color: var(--muted); font-size: 1.05rem; max-width: 46ch; }
+
+.stage { text-align: center; padding: 20px 0 8px; }
+.talk {
+  position: relative;
+  width: 176px; height: 176px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--ink);
+  color: #fff;
+  display: grid; place-items: center;
+  cursor: pointer;
+  margin: 30px auto 14px;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color .2s ease, color .2s ease, transform .15s ease;
+}
+.talk:active { transform: scale(.97); }
+.talk:focus-visible { outline: 3px solid var(--ink); outline-offset: 8px; }
+.talk::before, .talk::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 50%;
+  border: 2px solid transparent; pointer-events: none;
+}
+.talk svg { width: 64px; height: 64px; }
+.talk .ico-stop { display: none; }
+.talk[data-state="listening"] { background: var(--listen); color: var(--ink); }
+.talk[data-state="speaking"] { background: var(--speak); color: #fff; }
+.talk[data-state="listening"] .ico-mic,
+.talk[data-state="speaking"] .ico-mic { display: none; }
+.talk[data-state="listening"] .ico-stop,
+.talk[data-state="speaking"] .ico-stop { display: block; }
+.talk[data-state="listening"]::before { border-color: var(--listen); animation: ring 1.4s ease-out infinite; }
+.talk[data-state="listening"]::after  { border-color: var(--listen); animation: ring 1.4s ease-out .7s infinite; }
+.talk[data-state="speaking"]::before  { border-color: var(--speak); animation: ring 1.8s ease-out infinite; }
+.talk[data-state="thinking"] { cursor: progress; }
+.talk[data-state="thinking"]::before { inset: -10px; border: 2px dashed var(--ink); animation: spin 3s linear infinite; }
+@keyframes ring { from { transform: scale(1); opacity: .9; } to { transform: scale(1.4); opacity: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .talk::before, .talk::after { animation: none !important; }
+}
+
+.status { min-height: 3.2em; margin: 0 auto; max-width: 34ch; font-size: 1.05rem; font-weight: 600; }
+.notice {
+  margin: 14px 0 0; padding: 12px 14px;
+  border-left: 3px solid var(--error);
+  background: var(--paper); font-size: .95rem;
+}
+.notice[hidden] { display: none; }
+
+h2 { font-size: 1rem; font-weight: 600; color: var(--muted); margin: 34px 0 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.chip {
+  font: inherit; font-size: .95rem; color: var(--ink);
+  background: var(--paper); border: 1px solid var(--line);
+  border-radius: 999px; padding: 9px 14px; cursor: pointer; text-align: left;
+}
+.chip:hover { border-color: var(--ink); }
+.chip:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+.typed { display: flex; gap: 8px; margin-top: 8px; }
+.typed input {
+  flex: 1; min-width: 0; font: inherit; font-size: 1rem; color: var(--ink);
+  background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+}
+.typed input:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+.typed button {
+  font: inherit; font-weight: 600; color: #fff; background: var(--ink);
+  border: 0; border-radius: 10px; padding: 0 20px; cursor: pointer;
+}
+.typed button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+.log { margin: 30px 0 0; padding: 0; list-style: none; display: grid; gap: 18px; }
+.msg { padding-left: 14px; border-left: 3px solid var(--ink); }
+.msg.bot { border-left-color: var(--speak); }
+.msg.error { border-left-color: var(--error); color: var(--error); }
+.who { display: block; font-size: .85rem; font-weight: 600; color: var(--muted); margin-bottom: 2px; }
+.msg.error .who { color: var(--error); }
+.msg p { margin: 0; font-size: 1.05rem; max-width: 60ch; }
+
+.foot { margin-top: 44px; font-size: .85rem; color: var(--muted); max-width: 56ch; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Ask Ashhar anything.</h1>
+  <p class="lede">A voice bot that answers interview questions the way I would. Tap the big button, ask your question out loud, and listen to the answer.</p>
+
+  <section class="stage" aria-label="Voice controls">
+    <button id="talk" class="talk" data-state="idle" aria-label="Start talking">
+      <svg class="ico-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="9" y="3" width="6" height="12" rx="3"></rect>
+        <path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"></path>
+      </svg>
+      <svg class="ico-stop" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+      </svg>
+    </button>
+    <p id="status" class="status" role="status" aria-live="polite">Tap to talk</p>
+    <p id="notice" class="notice" role="alert" hidden></p>
+  </section>
+
+  <h2>Not sure what to ask? Tap one.</h2>
+  <ul class="chips" id="chips"></ul>
+
+  <h2>Or type a question</h2>
+  <form class="typed" id="typed">
+    <input id="q" type="text" maxlength="300" placeholder="Type your question" aria-label="Type your question" autocomplete="off" enterkeyhint="send">
+    <button type="submit">Ask</button>
+  </form>
+
+  <ul class="log" id="log" aria-live="polite"></ul>
+
+  <p class="foot">Your browser turns your speech into text, and the text goes to an AI model that writes the answer in my voice. This site does not store your questions.</p>
+</main>
+
+<script>
+(function () {
+  var QUESTIONS = [
+    'What should we know about your life story in a few sentences?',
+    'What is your number one superpower?',
+    'What are the top three areas you would like to grow in?',
+    'What misconception do your coworkers have about you?',
+    'How do you push your boundaries and limits?'
+  ];
+
+  var LABELS = {
+    idle: 'Tap to talk',
+    listening: 'Listening… tap when you’re done',
+    thinking: 'Thinking…',
+    speaking: 'Speaking… tap to stop'
+  };
+  var ARIA = {
+    idle: 'Start talking',
+    listening: 'Stop listening and send',
+    thinking: 'Thinking',
+    speaking: 'Stop speaking'
+  };
+
+  var talk = document.getElementById('talk');
+  var statusEl = document.getElementById('status');
+  var notice = document.getElementById('notice');
+  var log = document.getElementById('log');
+  var input = document.getElementById('q');
+  var chips = document.getElementById('chips');
+
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var synth = window.speechSynthesis;
+  var state = 'idle';
+  var rec = null;
+  var heard = '';
+  var history = [];
+  var runId = 0;
+  var voice = null;
+
+  function setState(s, msg) {
+    state = s;
+    talk.setAttribute('data-state', s);
+    talk.setAttribute('aria-label', ARIA[s]);
+    statusEl.textContent = msg || LABELS[s];
+  }
+
+  function showNotice(msg) {
+    notice.textContent = msg;
+    notice.hidden = !msg;
+  }
+
+  function addMsg(kind, text) {
+    var li = document.createElement('li');
+    li.className = 'msg ' + (kind === 'user' ? 'user' : kind === 'bot' ? 'bot' : 'error');
+    var who = document.createElement('span');
+    who.className = 'who';
+    who.textContent = kind === 'user' ? 'You' : kind === 'bot' ? 'Ashhar' : 'Problem';
+    var p = document.createElement('p');
+    p.textContent = text;
+    li.appendChild(who);
+    li.appendChild(p);
+    log.insertBefore(li, log.firstChild);
+  }
+
+  function pickVoice() {
+    if (!synth) return;
+    var all = synth.getVoices().filter(function (v) { return /^en/i.test(v.lang); });
+    if (!all.length) return;
+    var preferred = /Google US English|Samantha|Microsoft (Aria|Jenny|Guy|Davis)|Natural|Daniel|Karen/i;
+    voice = all.filter(function (v) { return preferred.test(v.name); })[0] ||
+            all.filter(function (v) { return /en[-_]US/i.test(v.lang); })[0] ||
+            all[0];
+  }
+  if (synth) {
+    pickVoice();
+    if (synth.addEventListener) synth.addEventListener('voiceschanged', pickVoice);
+  }
+
+  // Phones only allow speech after a tap, so "prime" it on every tap.
+  function unlockSpeech() {
+    if (!synth) return;
+    try {
+      var u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      synth.speak(u);
+    } catch (_) {}
+  }
+
+  function speak(text, id) {
+    if (!synth) { setState('idle'); return; }
+    synth.cancel();
+    var parts = text.match(/[^.!?]+[.!?]*\s*/g) || [text];
+    setState('speaking');
+    parts.forEach(function (part, i) {
+      var u = new SpeechSynthesisUtterance(part.trim());
+      if (voice) u.voice = voice;
+      u.lang = (voice && voice.lang) || 'en-US';
+      u.rate = 1.02;
+      if (i === parts.length - 1) {
+        u.onend = function () { if (id === runId && state === 'speaking') setState('idle'); };
+      }
+      u.onerror = function () { if (id === runId && state === 'speaking') setState('idle'); };
+      synth.speak(u);
+    });
+  }
+
+  function ask(text) {
+    text = (text || '').trim();
+    if (!text) return Promise.resolve();
+    if (rec) { heard = ''; try { rec.abort(); } catch (_) {} }
+    var id = ++runId;
+    if (synth) synth.cancel();
+    showNotice('');
+    addMsg('user', text);
+    history.push({ role: 'user', content: text });
+    setState('thinking');
+
+    return fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: history })
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (data) {
+        if (id !== runId) return;
+        if (!r.ok || !data.reply) throw new Error(data.error || 'Something went wrong. Please try again.');
+        history.push({ role: 'assistant', content: data.reply });
+        history = history.slice(-10);
+        addMsg('bot', data.reply);
+        speak(data.reply, id);
+      });
+    }).catch(function (e) {
+      if (id !== runId) return;
+      history.pop();
+      addMsg('error', e.message || 'Something went wrong. Please try again.');
+      setState('idle');
+    });
+  }
+
+  function listen() {
+    unlockSpeech();
+    showNotice('');
+    if (!SR) { input.focus(); return; }
+    rec = new SR();
+    rec.lang = 'en-US';
+    rec.interimResults = true;
+    rec.continuous = false;
+    rec.maxAlternatives = 1;
+    heard = '';
+
+    rec.onstart = function () { setState('listening'); };
+    rec.onresult = function (e) {
+      var t = '';
+      for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+      heard = t;
+      statusEl.textContent = '“' + t + '”';
+    };
+    rec.onerror = function (e) {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        showNotice('The microphone is blocked. Allow it in your browser’s address bar, or type your question below.');
+      } else if (e.error === 'network') {
+        showNotice('Voice input needs an internet connection. You can also type your question below.');
+      }
+    };
+    rec.onend = function () {
+      var t = heard.trim();
+      rec = null;
+      if (state !== 'listening') return;
+      if (t) ask(t);
+      else setState('idle', 'I didn’t catch that. Tap to try again.');
+    };
+    try { rec.start(); } catch (_) { rec = null; setState('idle'); }
+  }
+
+  talk.addEventListener('click', function () {
+    if (state === 'idle') listen();
+    else if (state === 'listening' && rec) rec.stop();
+    else if (state === 'speaking') { runId++; if (synth) synth.cancel(); setState('idle'); }
+  });
+
+  QUESTIONS.forEach(function (q) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip';
+    b.textContent = q;
+    b.addEventListener('click', function () { unlockSpeech(); ask(q); });
+    li.appendChild(b);
+    chips.appendChild(li);
+  });
+
+  document.getElementById('typed').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = input.value;
+    input.value = '';
+    unlockSpeech();
+    ask(v);
+  });
+
+  if (!SR) {
+    showNotice('Voice input isn’t available in this browser. Open this page in Chrome, Edge or Safari to talk, or tap a question or type below. I’ll still answer out loud.');
+    setState('idle', 'Tap a question or type below');
+  }
+})();
+</script>
+</body>
+</html>
